@@ -1,0 +1,3 @@
+[submodule "00-Tasks/03-Allocator/googletest"]
+	path = 00-Tasks/03-Allocator/googletest
+	url = https://github.com/google/googletest.git
