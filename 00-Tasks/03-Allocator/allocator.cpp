@@ -6,38 +6,46 @@
 #include <iostream>
 #include "allocator.h"
 
-#define METASIZE 2
+#define METASIZE 8
 
 struct MetaInfo {
-    size_t size;
-    size_t allocated;
+    int size;
+    int allocated;
 };
 
 
-Allocator::Allocator(void *memory, size_t size) : size_(size), mem_(memory) {}
+Allocator::Allocator(void *memory, size_t size) : size_(size), mem_(memory) {
+    auto info = static_cast<MetaInfo*>(mem_);
+    info->size = size;
+    info->allocated = 0;
+}
 
 
-std::pair<size_t*, size_t> Allocator::GetFreeBlock(size_t min_size) {
-    auto start_int = static_cast<size_t*>(mem_);
+std::pair<void*, size_t> Allocator::GetFreeBlock(size_t min_size) {
+    auto start_int = static_cast<char*>(mem_);
     auto *block = (MetaInfo*)start_int;
     size_t pos = 0;
     size_t total_size = 0;
 //    std::cout <<  "before get free " << std::endl;
 
-    while (pos < size_ / sizeof(size_t) - METASIZE) {
-//        std::cout << "pos " << pos << std::endl;
+    while (pos < size_ - METASIZE) {
+        std::cout << "pos " << pos << std::endl;
         while (block->allocated) {
-            pos += block->size;
+            std::cout << "first" << std::endl;
+            pos += block->size + METASIZE;
             start_int += block->size + METASIZE;
             block = (MetaInfo*)start_int;
         }
+        std::cout << "pos " << pos << std::endl;
         total_size = 0;
         while(!block->allocated) {
-            pos += block->size;
+            std::cout << "sec" << std::endl;
+            pos += block->size + METASIZE;
             total_size += block->size + METASIZE;
             start_int += block->size + METASIZE;
             block = (MetaInfo*)start_int;
         }
+        std::cout << "pos " << pos << std::endl;
         if (total_size >= min_size + METASIZE) {
             break;
         }
@@ -47,17 +55,18 @@ std::pair<size_t*, size_t> Allocator::GetFreeBlock(size_t min_size) {
 }
 
 void *Allocator::Allocate(size_t size) {
-    size_t align_size = size % sizeof(size_t) == 0 ? size : (size / sizeof(size_t) + 1) * sizeof(size_t);
+    size_t align_size = size % sizeof(int) == 0 ? size : (size / sizeof(int) + 1) * sizeof(int);
 
+    std::cout << "meta size " << sizeof(MetaInfo) << std::endl;
     if (align_size + sizeof(MetaInfo) > size_) {
         throw NotEnoughMemory();
     }
 
     auto res = GetFreeBlock(align_size);
 
-    size_t* start = res.first;
+    char* start = (char *)res.first;
     size_t block_size = res.second;
-    std::cout << "align size " << align_size << " start " << start << " block " << block_size << std::endl;
+//    std::cout << "align size " << align_size << " start " << start << " block " << block_size << std::endl;
     if (block_size < align_size) {
         throw NotEnoughMemory();
     }
@@ -68,8 +77,8 @@ void *Allocator::Allocate(size_t size) {
     info->size = align_size;
     info->allocated = true;
 
-    info = static_cast<MetaInfo*>((void *)(start + (align_size / sizeof(size_t))+ METASIZE));
-    info->size = block_size - (align_size / sizeof(size_t)) - METASIZE;
+    info = static_cast<MetaInfo*>((void *)(start + (align_size / sizeof(int))+ METASIZE));
+    info->size = block_size - (align_size / sizeof(int)) - METASIZE;
     info->allocated = false;
 
     return start + METASIZE;

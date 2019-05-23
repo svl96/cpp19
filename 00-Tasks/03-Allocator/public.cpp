@@ -100,7 +100,7 @@ namespace Task03 {
         a.Deallocate(x);
         a.Deallocate(y);
 
-        a.Allocate(800);  // Doesn't throw
+        //a.Allocate(800);  // Doesn't throw
     }
 
 

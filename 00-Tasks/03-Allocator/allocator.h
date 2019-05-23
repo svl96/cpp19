@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glob.h>
 #include "exceptions.h"
 #include <utility>
 
@@ -14,5 +13,5 @@ private:
     size_t size_;
     void* mem_;
 
-    std::pair<size_t*, size_t> GetFreeBlock(size_t min_size);
+    std::pair<void*, size_t> GetFreeBlock(size_t min_size);
 };
