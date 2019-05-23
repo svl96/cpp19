@@ -75,11 +75,11 @@ namespace Task03 {
         char value_2 = 22;
 
         void *ptr_1 = a.Allocate(size_1);
+        std::cout << "before for" << std::endl;
         void *ptr_2 = a.Allocate(size_2);
 
         memset(ptr_1, value_1, size_1);
         memset(ptr_2, value_2, size_2);
-
         for (size_t i = 0; i < size_1; ++i) {
             ASSERT_EQ((int) ((char*) ptr_1)[i], (int) value_1);
         }

@@ -3,6 +3,7 @@
 //
 
 #include <cstring>
+#include <iostream>
 #include "allocator.h"
 
 #define METASIZE 2
@@ -21,21 +22,28 @@ std::pair<size_t*, size_t> Allocator::GetFreeBlock(size_t min_size) {
     auto *block = (MetaInfo*)start_int;
     size_t pos = 0;
     size_t total_size = 0;
+//    std::cout <<  "before get free " << std::endl;
 
     while (pos < size_ / sizeof(size_t) - METASIZE) {
+//        std::cout << "pos " << pos << std::endl;
         while (block->allocated) {
+            pos += block->size;
             start_int += block->size + METASIZE;
             block = (MetaInfo*)start_int;
         }
         total_size = 0;
         while(!block->allocated) {
+            pos += block->size;
             total_size += block->size + METASIZE;
+            start_int += block->size + METASIZE;
+            block = (MetaInfo*)start_int;
         }
         if (total_size >= min_size + METASIZE) {
             break;
         }
     }
-    return {start_int, total_size};
+//    std::cout <<  "after get free " << std::endl;
+    return {start_int - total_size, total_size};
 }
 
 void *Allocator::Allocate(size_t size) {
@@ -49,7 +57,7 @@ void *Allocator::Allocate(size_t size) {
 
     size_t* start = res.first;
     size_t block_size = res.second;
-
+    std::cout << "align size " << align_size << " start " << start << " block " << block_size << std::endl;
     if (block_size < align_size) {
         throw NotEnoughMemory();
     }

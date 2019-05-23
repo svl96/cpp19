@@ -31,19 +31,19 @@ all: public public_advanced private private_advanced check
 clean:
 	$(RM_COMMAND) *.o private private_advanced public public_advanced check
 
-public: public.o gtest-all.o gtest_main.o gmock-all.o
+public: public.o gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
-check: gtest-all.o gtest_main.o gmock-all.o
+check: gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
-public_advanced: public_advanced.o gtest-all.o gtest_main.o gmock-all.o
+public_advanced: public_advanced.o gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
-private: private.o gtest-all.o gtest_main.o gmock-all.o
+private: private.o gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
-private_advanced: private_advanced.o gtest-all.o gtest_main.o gmock-all.o
+private_advanced: private_advanced.o gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
 gtest-all.o: $(GTEST)/src/gtest-all.cc
@@ -65,4 +65,7 @@ private.o: $(SRCD)/private.cpp
 	$(COMPILE_CXX_SRC)
 
 private_advanced.o: $(SRCD)/private_advanced.cpp
+	$(COMPILE_CXX_SRC)
+
+allocator.o: $(SRCD)/allocator.cpp
 	$(COMPILE_CXX_SRC)
