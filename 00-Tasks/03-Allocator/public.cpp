@@ -24,8 +24,9 @@ namespace Task03 {
         std::vector<void*> Fill(Allocator a, size_t element_size) {
             std::vector<void*> pointers;
             void *ptr;
-            for (;;) {
+            for (size_t i = 0;;++i) {
                 try {
+                    std::cout << "i: " << i << std::endl;
                     ptr = a.Allocate(element_size);
                 }
                 catch (const NotEnoughMemory& e) {
@@ -77,7 +78,7 @@ namespace Task03 {
         void *ptr_1 = a.Allocate(size_1);
         std::cout << "before for" << std::endl;
         void *ptr_2 = a.Allocate(size_2);
-
+        std::cout << ptr_1 << " " << ptr_2 << std::endl;
         memset(ptr_1, value_1, size_1);
         memset(ptr_2, value_2, size_2);
         for (size_t i = 0; i < size_1; ++i) {
@@ -98,9 +99,10 @@ namespace Task03 {
         void *x = a.Allocate(400);
         void *y = a.Allocate(400);
         a.Deallocate(x);
+        std::cout << "before" << std::endl;
         a.Deallocate(y);
 
-        //a.Allocate(800);  // Doesn't throw
+        a.Allocate(800);  // Doesn't throw
     }
 
 
@@ -109,7 +111,7 @@ namespace Task03 {
 
         auto pointers = Fill(a, 10);
         size_t initial_count = pointers.size();
-
+        std::cout << "after" << std::endl;
         ASSERT_GE(initial_count, (size_t) 20);
 
         for (auto& ptr : pointers) {
