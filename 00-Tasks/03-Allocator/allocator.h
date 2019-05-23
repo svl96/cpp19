@@ -13,5 +13,5 @@ private:
     size_t size_;
     void* mem_;
 
-    std::pair<void*, size_t> GetFreeBlock(size_t min_size);
+    void MergeFreeBlocks();
 };
