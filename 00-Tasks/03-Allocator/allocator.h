@@ -14,5 +14,5 @@ private:
     size_t size_;
     void* mem_;
 
-    std::pair<int*, size_t> GetFreeBlock(int* start_ptr, size_t min_size);
+    std::pair<size_t*, size_t> GetFreeBlock(size_t min_size);
 };

@@ -9,31 +9,29 @@
 
 struct MetaInfo {
     size_t size;
-    bool flag;
+    size_t allocated;
 };
-
 
 
 Allocator::Allocator(void *memory, size_t size) : size_(size), mem_(memory) {}
 
 
-std::pair<int*, size_t> Allocator::GetFreeBlock(int* start_ptr, size_t min_size) {
-    auto start_int = start_ptr;
-    auto mem_int = static_cast<int*>(mem_);
+std::pair<size_t*, size_t> Allocator::GetFreeBlock(size_t min_size) {
+    auto start_int = static_cast<size_t*>(mem_);
     auto *block = (MetaInfo*)start_int;
-    size_t pos = start_int - mem_int;
+    size_t pos = 0;
     size_t total_size = 0;
 
-    while (pos < size_ / 4) {
-        while (block->flag) {
-            start_int += block->size + sizeof(block);
+    while (pos < size_ / sizeof(size_t) - METASIZE) {
+        while (block->allocated) {
+            start_int += block->size + METASIZE;
             block = (MetaInfo*)start_int;
         }
         total_size = 0;
-        while(!block->flag) {
-            total_size += block->size + sizeof(block);
+        while(!block->allocated) {
+            total_size += block->size + METASIZE;
         }
-        if (total_size >= min_size + sizeof(block)) {
+        if (total_size >= min_size + METASIZE) {
             break;
         }
     }
@@ -41,38 +39,35 @@ std::pair<int*, size_t> Allocator::GetFreeBlock(int* start_ptr, size_t min_size)
 }
 
 void *Allocator::Allocate(size_t size) {
-    size_t size_int = size % 4 == 0 ? size / 4 : size / 4 + 1;
-    auto mem_int = static_cast<int*>(mem_);
-    size_t total_size = size / 4;
-    size_t pos = 0;
-    auto *block = (MetaInfo*)(mem_int);
-    // берем стартовый блок
-    // надо хранить ходить не по char* а по int*
-    // чтобы у нас было нормлаьное выравнивание.
-    // ищем максимально большое свободное место.
+    size_t align_size = size % sizeof(size_t) == 0 ? size : (size / sizeof(size_t) + 1) * sizeof(size_t);
 
-    auto res = GetFreeBlock(mem_int, size_int);
+    if (align_size + sizeof(MetaInfo) > size_) {
+        throw NotEnoughMemory();
+    }
 
-    int* start = res.first;
+    auto res = GetFreeBlock(align_size);
+
+    size_t* start = res.first;
     size_t block_size = res.second;
+
+    if (block_size < align_size) {
+        throw NotEnoughMemory();
+    }
 
     memset(start, 0, block_size);
     auto info = static_cast<MetaInfo*>((void *)start);
 
-    info->size = size_int;
-    info->flag = true;
+    info->size = align_size;
+    info->allocated = true;
 
-    int* next = start + size_int + METASIZE;
-    block_size -= size_int - METASIZE;
-
-    info = static_cast<MetaInfo*>((void *)next);
-    info->size = block_size;
-    info->flag = false;
+    info = static_cast<MetaInfo*>((void *)(start + (align_size / sizeof(size_t))+ METASIZE));
+    info->size = block_size - (align_size / sizeof(size_t)) - METASIZE;
+    info->allocated = false;
 
     return start + METASIZE;
 }
 
 void Allocator::Deallocate(void *ptr) {
     MetaInfo* info = static_cast<MetaInfo *>(ptr) - 1;
-    info->flag = false;
+    info->allocated = false;
 }
