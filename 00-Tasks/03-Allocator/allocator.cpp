@@ -6,14 +6,6 @@
 #include <iostream>
 #include "allocator.h"
 
-#define METASIZE 8
-
-struct MetaInfo {
-    size_t size;
-    size_t allocated;
-};
-
-
 
 Allocator::Allocator(void *memory, size_t size) : size_(size), mem_(memory) {
     auto info = static_cast<MetaInfo*>(mem_);
@@ -25,35 +17,35 @@ void *Allocator::Allocate(size_t size) {
 
     // 1. Получаем новый размер, который будет выровнен, новый размер, который придется выделять.
     // 2. Находим блок в памяти, который будет подходящего размера
+    size_t allocate_size = sizeof(MetaInfo) + size + (sizeof(size_t) - (size % sizeof(size_t))) % sizeof(size_t);
 
-    size_t new_size = sizeof(MetaInfo) + size + (sizeof(size_t) - (size % sizeof(size_t))) % sizeof(size_t);
+    size_t block_start = 0;
+    auto ch_mem_ptr = (char*)mem_;
+    MetaInfo* info = nullptr;
 
-//    std::cout << "new size " << new_size << " meta " << sizeof(MetaInfo) << " size " << size << std::endl;
-
-    auto ch_mem = (char*)mem_;
-    size_t start = 0;
-    auto info = (MetaInfo*)&(ch_mem[start]);
-    while (start < size_) {
-        info = (MetaInfo*)&(ch_mem[start]);
-        if (!info->allocated && info->size >= new_size) {
+    while (block_start + allocate_size <= size_) {
+        info = (MetaInfo*)&(ch_mem_ptr[block_start]);
+        if (!info->allocated && allocate_size <= info->size) {
             break;
         }
-        start += info->size;
-        if (info->size == 0) {
-            break;
-        }
+        block_start += info->size;
     }
-    if (start >= size_) {
+
+    if (info == nullptr || block_start + allocate_size > size_) {
         throw NotEnoughMemory();
     }
 
-    info->size = new_size;
-    info->allocated = true;
-    if (start + new_size + sizeof(MetaInfo) < size_) {
-        auto next = (MetaInfo *) &(ch_mem[start + new_size]);
-        next->size = info->size - new_size;
+    if (allocate_size + sizeof(MetaInfo) <= info->size) {
+        auto next = (MetaInfo *) &(ch_mem_ptr[block_start + allocate_size]);
+        next->size = info->size - allocate_size;
         next->allocated = false;
+    } else {
+        allocate_size = info->size;
     }
+
+    info->allocated = true;
+    info->size = allocate_size;
+
     return info + 1;
 }
 
@@ -73,8 +65,8 @@ void Allocator::MergeFreeBlocks() {
     while (offset < size_ && info->size != 0) {
         while (info->allocated) {
             offset += info->size;
-            if (offset >= size_ || info->size == 0) {
-                break;
+            if (offset >= size_ || info->size < sizeof(MetaInfo)) {
+                return;
             }
             info = (MetaInfo*)&(ch_mem[offset]);
         }
@@ -85,13 +77,15 @@ void Allocator::MergeFreeBlocks() {
         while (!info->allocated) {
             offset += info->size;
             if (offset >= size_ || info->size == 0) {
+                offset = size_;
                 break;
             }
             info = (MetaInfo*)&(ch_mem[offset]);
         }
+
         info = (MetaInfo*)&(ch_mem[start]);
         info->allocated = false;
-        info->size = offset >= size_ ? size_ - start : offset;
-        memset(&ch_mem[start], 0, info->size);
+        info->size = offset - start;
+        memset(&ch_mem[start + sizeof(MetaInfo)], 0, info->size - sizeof(MetaInfo));
     }
 }
