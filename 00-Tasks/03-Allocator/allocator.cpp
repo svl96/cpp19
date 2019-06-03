@@ -26,7 +26,7 @@ void *Allocator::Allocate(size_t size) {
     // 1. Получаем новый размер, который будет выровнен, новый размер, который придется выделять.
     // 2. Находим блок в памяти, который будет подходящего размера
 
-    size_t new_size = sizeof(MetaInfo) + size + (sizeof(int) - (size % sizeof(int))) % sizeof(int);
+    size_t new_size = sizeof(MetaInfo) + size + (sizeof(size_t) - (size % sizeof(size_t))) % sizeof(size_t);
 
 //    std::cout << "new size " << new_size << " meta " << sizeof(MetaInfo) << " size " << size << std::endl;
 
@@ -35,28 +35,25 @@ void *Allocator::Allocate(size_t size) {
     auto info = (MetaInfo*)&(ch_mem[start]);
     while (start < size_) {
         info = (MetaInfo*)&(ch_mem[start]);
-//        std::cout << "allocated " << info->allocated << std::endl;
         if (!info->allocated && info->size >= new_size) {
             break;
         }
         start += info->size;
-//        std::cout << "start in " << start << std::endl;
         if (info->size == 0) {
             break;
         }
     }
-//    std::cout << "start " << start << std::endl;
     if (start >= size_) {
         throw NotEnoughMemory();
     }
 
     info->size = new_size;
     info->allocated = true;
-//    std::cout << "new " << start + new_size << std::endl;
-    auto next = (MetaInfo*)&(ch_mem[start + new_size]);
-    next->size = info->size - new_size;
-    next->allocated = false;
-//    std::cout << "next " << next->size << std::endl;
+    if (start + new_size + sizeof(MetaInfo) < size_) {
+        auto next = (MetaInfo *) &(ch_mem[start + new_size]);
+        next->size = info->size - new_size;
+        next->allocated = false;
+    }
     return info + 1;
 }
 
@@ -85,10 +82,8 @@ void Allocator::MergeFreeBlocks() {
             break;
         }
         size_t start = offset;
-        std::cout << "sec while" << std::endl;
         while (!info->allocated) {
             offset += info->size;
-            std::cout << "offset " << offset << std::endl;
             if (offset >= size_ || info->size == 0) {
                 break;
             }
