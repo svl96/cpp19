@@ -34,7 +34,7 @@ clean:
 public: public.o gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
-check: tests.o gtest-all.o gtest_main.o gmock-all.o allocator.o
+check: check.o gtest-all.o gtest_main.o gmock-all.o allocator.o
 	$(LINK_EXECUTABLE)
 
 public_advanced: public_advanced.o gtest-all.o gtest_main.o gmock-all.o allocator.o
@@ -70,5 +70,5 @@ private_advanced.o: $(SRCD)/private_advanced.cpp
 allocator.o: $(SRCD)/allocator.cpp
 	$(COMPILE_CXX_SRC)
 	
-tests.o: $(SRCD)/tests.cpp
+check.o: $(SRCD)/check.cpp
 	$(COMPILE_CXX_SRC)

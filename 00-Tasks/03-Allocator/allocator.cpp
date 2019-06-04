@@ -18,7 +18,6 @@ void *Allocator::Allocate(size_t size) {
     // 1. Получаем новый размер, который будет выровнен, новый размер, который придется выделять.
     // 2. Находим блок в памяти, который будет подходящего размера
     size_t allocate_size = sizeof(MetaInfo) + size + (sizeof(size_t) - (size % sizeof(size_t))) % sizeof(size_t);
-
     size_t block_start = 0;
     auto ch_mem_ptr = (char*)mem_;
     MetaInfo* info = nullptr;
@@ -45,7 +44,6 @@ void *Allocator::Allocate(size_t size) {
 
     info->allocated = true;
     info->size = allocate_size;
-
     return info + 1;
 }
 
@@ -69,9 +67,6 @@ void Allocator::MergeFreeBlocks() {
                 return;
             }
             info = (MetaInfo*)&(ch_mem[offset]);
-        }
-        if (offset >= size_) {
-            break;
         }
         size_t start = offset;
         while (!info->allocated) {
